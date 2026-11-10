@@ -1,0 +1,150 @@
+/* Placeholder look for the early phases. The real visual design comes in phase 7. */
+:root {
+  --bg: #14110f;
+  --panel: #1f1a17;
+  --line: #3a302a;
+  --text: #e8dfd3;
+  --muted: #a39484;
+  --accent: #c9a24b;
+  --ok: #7fbf7f;
+  --bad: #d9756a;
+}
+
+* { box-sizing: border-box; }
+
+/* The `hidden` attribute must always win, even over display:flex/grid rules. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.5;
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  padding: 28px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+h2 { margin: 20px 0 8px; font-size: 1.1rem; }
+h2 span { color: var(--muted); font-weight: normal; }
+
+.tagline { margin: 0 0 24px; color: var(--muted); }
+
+/* ---- forms ---- */
+.field { display: block; margin-bottom: 14px; }
+.field > span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 0.9rem; }
+
+input, select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 1rem; /* 16px or more stops iPhones from zooming in on focus */
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.code-input { text-transform: uppercase; letter-spacing: 0.4em; font-size: 1.4rem; text-align: center; }
+
+/* ---- buttons ---- */
+button {
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.primary, .secondary {
+  width: 100%;
+  min-height: 48px; /* comfortable to tap on a phone */
+  margin-top: 8px;
+  border: 1px solid var(--accent);
+}
+.primary { color: var(--bg); background: var(--accent); }
+.secondary { color: var(--accent); background: transparent; }
+
+.link {
+  min-height: 44px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+}
+
+.tabs { display: flex; gap: 8px; margin: 6px 0 16px; }
+.tab {
+  flex: 1;
+  min-height: 44px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.tab.active { color: var(--accent); border-color: var(--accent); }
+
+/* ---- messages ---- */
+.error { min-height: 1.5em; margin: 10px 0 0; color: var(--bad); }
+.hint { margin: 10px 0 0; color: var(--muted); }
+.banner {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 4px;
+}
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+
+/* ---- lobby ---- */
+.code-box { text-align: center; padding: 12px; border: 1px dashed var(--line); border-radius: 4px; }
+.code-box > span { display: block; color: var(--muted); font-size: 0.9rem; }
+.code-box > strong { display: block; font-size: 2.6rem; letter-spacing: 0.3em; margin-right: -0.3em; color: var(--accent); }
+
+.settings { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.settings li { padding: 2px 10px; font-size: 0.85rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; }
+
+.players { margin: 0 0 12px; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.player.offline { opacity: 0.5; }
+.player-name { overflow-wrap: anywhere; }
+.player-name small { color: var(--muted); }
+.badge { flex-shrink: 0; font-size: 0.85rem; color: var(--muted); }
+.badge.ok { color: var(--ok); }
+
+/* ---- debug box (development only) ---- */
+.debug { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+.debug summary { cursor: pointer; min-height: 32px; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.output { min-height: 3em; margin: 12px 0 0; font-style: italic; overflow-wrap: anywhere; color: var(--text); }
+.output.bad { color: var(--bad); }

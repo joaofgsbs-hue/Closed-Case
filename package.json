@@ -1,0 +1,22 @@
+{
+  "name": "closed-case",
+  "version": "0.1.0",
+  "description": "Closed Case - an AI-generated murder mystery you solve alone or with friends",
+  "private": true,
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4",
+    "zod": "^4.6.7"
+  }
+}
