@@ -56,6 +56,10 @@ export function renderLobby(room) {
     el('li', {}, MODE_LABELS[room.settings.mode] || room.settings.mode),
   );
 
+  // e.g. "The case could not be written this time."
+  $('lobby-notice').textContent = room.notice || '';
+  $('lobby-notice').hidden = !room.notice;
+
   $('lobby-count').textContent = `(${room.players.length})`;
   $('lobby-players').replaceChildren(
     ...room.players.map((player) => {

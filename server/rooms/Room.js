@@ -4,6 +4,7 @@
 // A single-player game is simply a Room with one player in it.
 
 import crypto from 'node:crypto';
+import { config } from '../config.js';
 
 export const MAX_PLAYERS = 8;
 
@@ -11,15 +12,50 @@ export class Room {
   constructor(code, settings) {
     this.code = code;                 // 4 letters, e.g. "KQRT"
     this.settings = settings;         // { theme, difficulty, mode }
-    this.phase = 'lobby';             // 'lobby' -> 'starting' -> (later phases add more)
+    this.phase = 'lobby';             // 'lobby' -> 'generating' -> 'investigation'
+    this.generation = null;           // progress while the case is being written
+    this.notice = null;               // a message for the lobby, e.g. "generation failed"
+    this.caseCode = null;             // 6-character code to replay this case later
     this.players = new Map();         // playerId -> player object
     this.hostId = null;
     this.createdAt = Date.now();
     this.emptySince = null;           // set when nobody is connected; used for cleanup
 
     // SERVER-ONLY. Filled in phase 3 with the full solution of the case.
-    // publicView.js never reads this field, so it can never reach a browser.
+    // publicView.js never copies this object, so it can never reach a browser.
     this.caseTruth = null;
+
+    // ---- investigation state (created by startInvestigation) ----
+    this.interrogations = new Map(); // suspectId -> { questionsUsed, exchanges: [] }
+    this.suspectQueues = new Map();  // suspectId -> promise chain (see interrogation/queue.js)
+    this.totalQuestions = 0;         // across all suspects, for the room-wide limit
+    this.nextId = 1;                 // simple counter for ids (exchanges, statements, links)
+
+    this.actionsMax = 0;             // location searches allowed
+    this.actionsLeft = 0;
+    this.searched = new Map();       // locationId -> { by: playerName }
+    this.foundClues = new Map();     // clueId -> { by: playerName }
+    this.board = { statements: [], links: [] };
+    this.linkChecksUsed = 0;
+    this.cornered = false;           // true once the culprit faces proof they cannot explain
+  }
+
+  /** Called once the case is ready: opens the investigation. */
+  startInvestigation(truth, caseCode) {
+    this.caseTruth = truth;
+    this.caseCode = caseCode;
+    this.interrogations = new Map(truth.suspects.map((s) => [s.id, { questionsUsed: 0, exchanges: [] }]));
+    this.suspectQueues = new Map();
+    this.totalQuestions = 0;
+    this.actionsMax = config.ACTIONS_PER_DAY || Math.max(1, truth.locations.length - 1);
+    this.actionsLeft = this.actionsMax;
+    this.searched = new Map();
+    this.foundClues = new Map();
+    this.board = { statements: [], links: [] };
+    this.linkChecksUsed = 0;
+    this.cornered = false;
+    this.generation = null;
+    this.phase = 'investigation';
   }
 
   /** Names are compared without caring about upper/lower case or outer spaces. */

@@ -49,6 +49,11 @@
             <option value="competitive">Competitive — first correct accusation wins</option>
           </select>
         </label>
+        <label class="field">
+          <span>Replay a case code (optional)</span>
+          <input id="create-casecode" type="text" maxlength="6" autocomplete="off" autocapitalize="characters"
+                 spellcheck="false" placeholder="Leave empty for a new case">
+        </label>
         <button type="submit" class="primary">Create room</button>
       </form>
 
@@ -83,6 +88,7 @@
       </div>
 
       <ul id="lobby-settings" class="settings"></ul>
+      <p id="lobby-notice" class="error" hidden role="alert"></p>
 
       <h2>Players <span id="lobby-count"></span></h2>
       <ul id="lobby-players" class="players"></ul>
@@ -94,11 +100,96 @@
       <button id="lobby-leave" type="button" class="link">Leave room</button>
     </section>
 
-    <!-- ============ SCREEN: game (placeholder until phase 3) ============ -->
+    <!-- ============ SCREEN: generating (the case is being written) ============ -->
+    <section id="screen-generating" class="screen" hidden>
+      <h2>A crime is being committed…</h2>
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="generating-stage" class="hint" aria-live="polite"></p>
+      <p class="hint">This usually takes two to three minutes. Keep this page open.</p>
+      <p class="hint">Waiting: <span id="generating-elapsed">0:00</span></p>
+    </section>
+
+    <!-- ============ SCREEN: game (the investigation hub: case file, map, board) ============ -->
     <section id="screen-game" class="screen" hidden>
-      <h2>The case is opening…</h2>
-      <p class="hint">Room <strong id="game-code"></strong>. Case generation arrives in the next phase.</p>
+      <p class="eyebrow">Case file <span id="game-casecode"></span> · Room <span id="game-code"></span></p>
+      <h2 id="game-title" class="case-title"></h2>
+
+      <div class="tabs" role="tablist">
+        <button id="hub-tab-case" type="button" class="tab active" role="tab">Case</button>
+        <button id="hub-tab-map" type="button" class="tab" role="tab">Map <span id="hub-actions"></span></button>
+        <button id="hub-tab-board" type="button" class="tab" role="tab">Board <span id="hub-board-count"></span></button>
+      </div>
+
+      <!-- ---- panel: case file ---- -->
+      <div id="hub-panel-case">
+      <p id="game-setting" class="hint"></p>
+
+      <h3>The victim</h3>
+      <p><strong id="game-victim-name"></strong></p>
+      <p id="game-victim-desc"></p>
+      <ul id="game-victim-facts" class="facts"></ul>
+
+      <h3>Suspects <span class="hint-inline">tap one to question them</span></h3>
+      <ul id="game-suspects" class="dossier"></ul>
+      <p id="game-room-questions" class="hint"></p>
+
+      </div>
+
+      <!-- ---- panel: map ---- -->
+      <div id="hub-panel-map" hidden>
+        <p id="map-actions" class="hint"></p>
+        <ul id="map-locations" class="places"></ul>
+        <p id="map-error" class="error" aria-live="polite"></p>
+      </div>
+
+      <!-- ---- panel: evidence board ---- -->
+      <div id="hub-panel-board" hidden>
+        <p class="hint">Select two items and link them if you think they contradict each other. The team will be told if the contradiction is real.</p>
+        <h3>Clues</h3>
+        <ul id="board-clues" class="board-list"></ul>
+        <h3>Statements <span class="hint-inline">pin answers from interrogations</span></h3>
+        <ul id="board-statements" class="board-list"></ul>
+        <div class="board-actions">
+          <button id="board-link" type="button" class="primary" disabled>Link as contradiction</button>
+          <p id="board-checks" class="hint"></p>
+          <p id="board-error" class="error" aria-live="polite"></p>
+        </div>
+        <h3>Links</h3>
+        <ul id="board-links" class="board-list"></ul>
+      </div>
+
       <button id="game-leave" type="button" class="link">Leave room</button>
+    </section>
+    <!-- ============ SCREEN: interrogation (chat with one suspect) ============ -->
+    <section id="screen-interrogation" class="screen" hidden>
+      <button id="interro-back" type="button" class="link">← Back to the case file</button>
+      <div class="interro-head">
+        <div>
+          <h2 id="interro-name"></h2>
+          <p id="interro-relation" class="hint"></p>
+        </div>
+        <span id="interro-count" class="badge"></span>
+      </div>
+
+      <!-- aria-live: screen readers announce new answers as they arrive -->
+      <ul id="interro-log" class="chat" aria-live="polite"></ul>
+
+      <form id="interro-clue-form" class="clue-form">
+        <label class="field">
+          <span>Show a clue your team found</span>
+          <select id="interro-clue"></select>
+        </label>
+        <button id="interro-show" type="submit" class="secondary">Show clue</button>
+      </form>
+
+      <form id="interro-form" class="chat-form">
+        <textarea id="interro-input" rows="2" maxlength="300" placeholder="Ask something…"></textarea>
+        <div class="chat-form-row">
+          <span id="interro-chars" class="hint">0/300</span>
+          <button id="interro-send" type="submit" class="primary">Ask</button>
+        </div>
+      </form>
+      <p id="interro-error" class="error" aria-live="polite"></p>
     </section>
   </main>
 

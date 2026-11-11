@@ -142,6 +142,121 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .badge { flex-shrink: 0; font-size: 0.85rem; color: var(--muted); }
 .badge.ok { color: var(--ok); }
 
+/* ---- generating ---- */
+.spinner {
+  width: 44px;
+  height: 44px;
+  margin: 20px auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* People who ask their device for less motion get a still ring. */
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* ---- case briefing ---- */
+h3 { margin: 22px 0 6px; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.eyebrow { margin: 0; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.case-title { margin: 4px 0 6px; font-size: 1.5rem; }
+.screen p { overflow-wrap: anywhere; }
+.facts { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+.dossier { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.dossier li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.dossier strong { display: block; }
+.dossier span { display: block; color: var(--muted); font-size: 0.92rem; }
+
+/* ---- suspects as buttons ---- */
+.hint-inline { margin-left: 6px; font-size: 0.75rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.dossier li { padding: 0; }
+.suspect-card {
+  display: block;
+  width: 100%;
+  padding: 12px 8px;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.suspect-card:hover { background: rgba(201, 162, 75, 0.08); }
+.suspect-count { margin-top: 4px; color: var(--accent) !important; font-size: 0.85rem !important; }
+
+/* ---- interrogation chat ---- */
+.interro-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 4px; }
+.interro-head h2 { margin: 4px 0 0; }
+.interro-head .hint { margin: 2px 0 0; }
+.chat {
+  margin: 14px 0 0;
+  padding: 12px;
+  list-style: none;
+  /* The chat scrolls on its own, so the question box stays in reach on a phone. */
+  max-height: 55vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.chat li { margin-bottom: 12px; padding: 8px 10px; border-radius: 4px; overflow-wrap: anywhere; }
+.chat li:last-child { margin-bottom: 0; }
+.chat small { display: block; margin-bottom: 2px; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.chat-q { margin-left: 15%; background: var(--panel); border: 1px solid var(--line); }
+.chat-q.mine { border-color: var(--accent); }
+.chat-a { margin-right: 15%; background: rgba(201, 162, 75, 0.1); }
+.chat-a.thinking { font-style: italic; color: var(--muted); }
+.chat-a.failed { font-style: italic; color: var(--bad); }
+.chat-empty { color: var(--muted); font-style: italic; text-align: center; }
+
+.chat-form { margin-top: 12px; }
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  resize: vertical;
+}
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+textarea:disabled { opacity: 0.5; }
+.chat-form-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chat-form-row .hint { margin: 0; font-size: 0.85rem; }
+.chat-form-row .primary { width: auto; min-width: 120px; padding: 0 20px; }
+
+/* ---- map ---- */
+.places { margin: 0; padding: 0; list-style: none; }
+.places > li { padding: 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 4px; }
+.places > li.searched { border-color: var(--accent); }
+.places > li > strong { display: block; }
+.places small { color: var(--muted); font-weight: normal; }
+.places p { margin: 6px 0; }
+
+/* ---- evidence board ---- */
+.board-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.board-list > li { padding: 10px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.board-item { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.board-item input { width: 22px; height: 22px; min-height: 0; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--accent); }
+.board-item small { color: var(--muted); }
+.board-actions { margin: 14px 0; }
+.link-row { display: grid; gap: 2px; }
+.link-row .link-x { color: var(--muted); }
+.link-row small { color: var(--muted); }
+.link-row.checking strong { color: var(--muted); font-style: italic; }
+.link-row.real strong { color: var(--ok); }
+.link-row.not-real strong { color: var(--bad); }
+.link-row.failed strong { color: var(--bad); font-weight: normal; font-style: italic; }
+
+/* ---- show a clue, pins ---- */
+.clue-form { display: flex; gap: 10px; align-items: flex-end; margin-top: 12px; }
+.clue-form .field { flex: 1; margin: 0; }
+.clue-form .secondary { width: auto; margin: 0; padding: 0 16px; flex-shrink: 0; }
+.chat .shown { font-style: italic; color: var(--accent); }
+.chat .pinned { font-size: 0.8rem; color: var(--ok); }
+.chat .link { min-height: 0; font-size: 0.85rem; }
+
 /* ---- debug box (development only) ---- */
 .debug { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .debug summary { cursor: pointer; min-height: 32px; }

@@ -17,12 +17,16 @@ export function initHome() {
   $('form-create').addEventListener('submit', async (event) => {
     event.preventDefault(); // stop the browser from reloading the page
     const name = $('home-name').value.trim();
-    await submit(event.target, 'room:create', {
+    const payload = {
       name,
       theme: $('create-theme').value,
       difficulty: $('create-difficulty').value,
       mode: $('create-mode').value,
-    });
+    };
+    // Only send caseCode when the player typed one (the server rejects empty text).
+    const caseCode = $('create-casecode').value.trim().toUpperCase();
+    if (caseCode) payload.caseCode = caseCode;
+    await submit(event.target, 'room:create', payload);
   });
 
   $('form-join').addEventListener('submit', async (event) => {

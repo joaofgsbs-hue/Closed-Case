@@ -32,7 +32,12 @@ export async function generate({ system, messages, json = false, maxTokens = 102
     // Qwen3 is a "thinking" model: by default it writes a long hidden reasoning
     // trace before answering, which makes it several times slower. We turn it off.
     think: false,
-    options: { temperature, num_predict: maxTokens },
+    // Keep the model loaded in memory for 30 minutes after each call, so
+    // players do not wait for it to reload between questions.
+    keep_alive: '30m',
+    // num_ctx is kept the SAME for every call: changing it makes Ollama reload
+    // the whole model, which takes several seconds each time.
+    options: { temperature, num_predict: maxTokens, num_ctx: config.OLLAMA_NUM_CTX },
   };
   if (json === true) body.format = 'json';
   else if (json && typeof json === 'object') body.format = json;

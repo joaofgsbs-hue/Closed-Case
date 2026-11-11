@@ -16,9 +16,41 @@ const provider =
 export const providerName = provider.name;
 export { ProviderError };
 
+// ---- a waiting line in front of the model -------------------------------------
+// A local model answers one request at a time. If we sent it three at once,
+// Ollama would quietly queue them itself, and the time the last one spends
+// waiting would count against its 30-second timeout - so it would fail even
+// though the model is fine. Keeping the line HERE means each request's timer
+// only starts when the model actually begins working on it.
+const MAX_PARALLEL = config.LLM_MAX_PARALLEL;
+let running = 0;
+const waiting = []; // functions that start a job, in arrival order
+
+function limited(job) {
+  return new Promise((resolve, reject) => {
+    const start = () => {
+      running += 1;
+      job()
+        .then(resolve, reject)
+        .finally(() => {
+          running -= 1;
+          const next = waiting.shift();
+          if (next) next();
+        });
+    };
+    if (running < MAX_PARALLEL) start();
+    else waiting.push(start);
+  });
+}
+
+/** How many model requests are waiting for their turn (for logs and tests). */
+export function modelQueueLength() {
+  return waiting.length;
+}
+
 /** Ask the model for plain text. Throws ProviderError on any failure. */
 export function generate(request) {
-  return provider.generate(request);
+  return limited(() => provider.generate(request));
 }
 
 /**
@@ -27,7 +59,7 @@ export function generate(request) {
  * caller's job, with zod.)
  */
 export async function generateJson(request) {
-  const text = await provider.generate({ ...request, json: request.json ?? true });
+  const text = await generate({ ...request, json: request.json ?? true });
   try {
     return JSON.parse(stripCodeFence(text));
   } catch (err) {

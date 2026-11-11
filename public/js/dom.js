@@ -16,7 +16,7 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
-const SCREENS = ['home', 'lobby', 'game'];
+const SCREENS = ['home', 'lobby', 'generating', 'game', 'interrogation'];
 
 export function showScreen(name) {
   for (const screen of SCREENS) $(`screen-${screen}`).hidden = screen !== name;

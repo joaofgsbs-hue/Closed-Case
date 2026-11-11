@@ -14,8 +14,30 @@ const envSchema = z.object({
   LLM_PROVIDER: z.enum(['ollama', 'anthropic']).default('ollama'),
   LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
 
+  // Writing a whole case is a much longer answer than one line of dialogue,
+  // so it gets its own, longer time limits.
+  CASE_TIMEOUT_MS: z.coerce.number().int().min(10000).default(240000),
+  CASE_VERIFY_TIMEOUT_MS: z.coerce.number().int().min(10000).default(120000),
+
+  // How many requests the model may work on at the same time.
+  // 1 is right for a local model. A cloud API can take more (for example 4).
+  LLM_MAX_PARALLEL: z.coerce.number().int().min(1).max(16).default(1),
+
+  // Location searches per game, shared by the room. 0 = automatic: one fewer
+  // than the number of locations, so players must choose where to look.
+  ACTIONS_PER_DAY: z.coerce.number().int().min(0).max(20).default(0),
+  // How many times a room may ask "is this a real contradiction?".
+  LINK_CHECKS_PER_ROOM: z.coerce.number().int().min(1).max(100).default(12),
+
+  // Interrogation limits. They are shared by everyone in a room.
+  QUESTIONS_PER_SUSPECT: z.coerce.number().int().min(1).max(50).default(8),
+  MAX_QUESTIONS_PER_ROOM: z.coerce.number().int().min(1).max(500).default(60),
+
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434'),
   OLLAMA_MODEL: z.string().min(1).default('qwen3:8b'),
+  // How much text (in tokens) the local model can hold in mind at once.
+  // A full case needs more than Ollama's small default.
+  OLLAMA_NUM_CTX: z.coerce.number().int().min(2048).default(8192),
 
   ANTHROPIC_API_KEY: z.string().default(''),
   ANTHROPIC_MODEL: z.string().min(1).default('claude-haiku-5-5'),

@@ -11,10 +11,18 @@ import { config } from '../config.js';
 import { logger } from '../logger.js';
 import { generate, ProviderError } from '../providers/index.js';
 import { createRoom, getRoom, deleteRoom } from '../rooms/roomManager.js';
+import { generateCase, CaseGenerationError, MAX_ATTEMPTS } from '../case/generate.js';
+import { saveCase, loadCase, caseExists } from '../case/store.js';
 import { MAX_PLAYERS } from '../rooms/Room.js';
 import { toPublicRoom } from '../rooms/publicView.js';
 import { attachRateLimit } from './rateLimit.js';
-import { createRoomSchema, joinRoomSchema, readySchema, emptySchema } from './schemas.js';
+import {
+  createRoomSchema, joinRoomSchema, readySchema, emptySchema, askSchema,
+  showClueSchema, searchSchema, pinSchema, unpinSchema, linkSchema,
+} from './schemas.js';
+import { askSuspect } from '../interrogation/interrogate.js';
+import { searchLocation } from '../game/locations.js';
+import { pinStatement, unpinStatement, linkItems } from '../game/board.js';
 
 // In the lobby, a player who disconnects is removed after this grace period
 // (long enough to survive a page refresh or a phone switching networks).
@@ -67,6 +75,56 @@ export function registerSocketHandlers(io) {
     else broadcastRoom(room);
   }
 
+  /**
+   * Gets a case for the room: loads a saved one (replay) or generates a new
+   * one. Runs in the background after game:start. It never throws: on any
+   * failure the room goes back to the lobby with a message, so the game
+   * cannot get stuck.
+   */
+  async function prepareCase(room) {
+    // The room may be deleted while we wait (everyone left). Always re-check.
+    const stillOpen = () => getRoom(room.code) === room;
+    try {
+      let truth;
+      let caseCode;
+
+      if (room.settings.caseCode) {
+        const saved = await loadCase(room.settings.caseCode);
+        if (!saved) throw new CaseGenerationError('saved case is missing or invalid', []);
+        truth = saved.truth;
+        caseCode = saved.caseCode;
+        room.settings.theme = saved.theme;         // show the real theme of the replayed case
+        room.settings.difficulty = saved.difficulty;
+      } else {
+        const result = await generateCase({
+          theme: room.settings.theme,
+          difficulty: room.settings.difficulty,
+          onProgress: (progress) => {
+            if (!stillOpen()) return;
+            room.generation = progress;
+            broadcastRoom(room);
+          },
+        });
+        truth = result.truth;
+        caseCode = await saveCase(result);
+      }
+
+      if (!stillOpen()) return;
+      room.startInvestigation(truth, caseCode); // the truth stays on the server; see publicView.js
+      logger.info(`room ${room.code} is investigating case ${caseCode}`);
+      broadcastRoom(room);
+    } catch (err) {
+      // The details (which may quote the solution) go to the server log only.
+      logger.error(`room ${room.code} could not get a case`, err instanceof CaseGenerationError ? { message: err.message, attempts: err.attempts.map((a) => ({ stage: a.stage, problems: a.problems })) } : err);
+      if (!stillOpen()) return;
+      room.phase = 'lobby';
+      room.generation = null;
+      room.notice = 'The case could not be written this time. Please try again.';
+      for (const player of room.players.values()) player.ready = false;
+      broadcastRoom(room);
+    }
+  }
+
   io.on('connection', (socket) => {
     attachRateLimit(socket);
 
@@ -106,10 +164,15 @@ export function registerSocketHandlers(io) {
     }
 
     // ---- room:create ---------------------------------------------------------
-    on('room:create', createRoomSchema, { needsRoom: false }, (data) => {
+    on('room:create', createRoomSchema, { needsRoom: false }, async (data) => {
+      // Replaying a saved case? Check it exists BEFORE creating the room.
+      if (data.caseCode && !(await caseExists(data.caseCode))) {
+        return { ok: false, error: 'No saved case with that code.' };
+      }
+
       leaveCurrentRoom(socket); // a socket is only ever in one room
 
-      const room = createRoom({ theme: data.theme, difficulty: data.difficulty, mode: data.mode });
+      const room = createRoom({ theme: data.theme, difficulty: data.difficulty, mode: data.mode, caseCode: data.caseCode || null });
       if (!room) return { ok: false, error: 'The server is full right now. Try again later.' };
 
       const player = room.addPlayer(data.name); // first player becomes host
@@ -164,10 +227,71 @@ export function registerSocketHandlers(io) {
       if (room.phase !== 'lobby') return { ok: false, error: 'The game has already started.' };
       if (!room.canStart()) return { ok: false, error: 'Everyone must be ready first.' };
 
-      // Phase 3 will generate the case here. For now we only change the phase.
-      room.phase = 'starting';
-      logger.info(`room ${room.code} started with ${room.connectedPlayers().length} player(s)`);
+      room.phase = 'generating';
+      room.notice = null;
+      room.generation = { attempt: 1, maxAttempts: MAX_ATTEMPTS, stage: 'writing the story' };
+      logger.info(`room ${room.code} starting with ${room.connectedPlayers().length} player(s)`);
       broadcastRoom(room);
+
+      // Writing a case takes a minute or more. We do NOT wait for it here:
+      // the host gets an immediate "ok", and everyone is updated through
+      // 'room:state' as the work progresses. (No "await" on purpose.)
+      prepareCase(room);
+    });
+
+    // ---- interrogation:ask ---------------------------------------------------
+    // Replies at once ("your question is in line"). The answer itself arrives
+    // later, to everyone in the room, through 'room:state'.
+    on('interrogation:ask', askSchema, { needsRoom: true }, (data, { room, player }) => {
+      return askSuspect({
+        room,
+        player,
+        suspectId: data.suspectId,
+        text: data.text,
+        onUpdate: () => { if (getRoom(room.code) === room) broadcastRoom(room); },
+      });
+    });
+
+    // ---- interrogation:showClue ----------------------------------------------
+    // Same line and same limit as a question; the "question" is a found clue.
+    on('interrogation:showClue', showClueSchema, { needsRoom: true }, (data, { room, player }) => {
+      return askSuspect({
+        room,
+        player,
+        suspectId: data.suspectId,
+        clueId: data.clueId,
+        onUpdate: () => { if (getRoom(room.code) === room) broadcastRoom(room); },
+      });
+    });
+
+    // ---- location:search -----------------------------------------------------
+    on('location:search', searchSchema, { needsRoom: true }, (data, { room, player }) => {
+      const result = searchLocation(room, player, data.locationId);
+      if (result.ok && !result.alreadySearched) broadcastRoom(room);
+      return result;
+    });
+
+    // ---- evidence board ------------------------------------------------------
+    on('board:pin', pinSchema, { needsRoom: true }, (data, { room, player }) => {
+      const result = pinStatement(room, player, data.exchangeId);
+      if (result.ok) broadcastRoom(room);
+      return result;
+    });
+
+    on('board:unpin', unpinSchema, { needsRoom: true }, (data, { room }) => {
+      const result = unpinStatement(room, data.statementId);
+      if (result.ok) broadcastRoom(room);
+      return result;
+    });
+
+    on('board:link', linkSchema, { needsRoom: true }, (data, { room, player }) => {
+      return linkItems({
+        room,
+        player,
+        a: data.a,
+        b: data.b,
+        onUpdate: () => { if (getRoom(room.code) === room) broadcastRoom(room); },
+      });
     });
 
     // ---- disconnect (tab closed, wifi lost, page refreshed...) ---------------
