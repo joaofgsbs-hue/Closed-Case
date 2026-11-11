@@ -93,6 +93,11 @@ export const caseTruthSchema = z.object({
     motive: text(400),
     method: text(400),
     opportunity: text(600),
+    // The short category picked by code (one entry of the theme's lists in
+    // themes.js). The accusation is multiple choice, and these are the right
+    // answers. Optional only so cases saved before phase 6 still load.
+    motiveCategory: text(200).optional(),
+    methodCategory: text(200).optional(),
   }),
   timeline: z.array(timelineEvent).min(6).max(16),
   clues: z.array(clue).min(6).max(10),

@@ -263,3 +263,31 @@ textarea:disabled { opacity: 0.5; }
 .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .output { min-height: 3em; margin: 12px 0 0; font-style: italic; overflow-wrap: anywhere; color: var(--text); }
 .output.bad { color: var(--bad); }
+
+/* ---- phase 6: accusation, vote, verdict, history ---- */
+.tabs { flex-wrap: wrap; } /* four tabs must fit on a phone */
+.notice { color: var(--accent); }
+fieldset.field { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+fieldset.field legend { color: var(--muted); padding: 0 4px; }
+.vote-alert {
+  display: block; width: 100%; margin: 0 0 12px; padding: 10px 12px;
+  background: var(--accent); color: var(--bg); border: 0; border-radius: 8px;
+  font-weight: bold; text-align: left; cursor: pointer;
+}
+.vote-alert[hidden] { display: none; }
+.vote-buttons { display: flex; gap: 8px; margin: 12px 0 6px; }
+.vote-buttons button { flex: 1; }
+.vote.agree { color: var(--ok); }
+.vote.disagree { color: var(--bad); }
+.vote.none { color: var(--muted); }
+#vote-list li { display: flex; justify-content: space-between; gap: 8px; }
+#vote-list li.offline { opacity: 0.55; }
+.verdict { font-size: 1.3rem; font-weight: bold; margin: 8px 0; }
+.score { font-size: 2rem; color: var(--accent); margin: 4px 0 8px; }
+.breakdown { list-style: none; padding: 0; margin: 0 0 16px; }
+.breakdown li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.timeline { list-style: none; padding: 0; }
+.timeline li { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.history { margin-top: 16px; }
+.history-list { list-style: none; padding: 0; }
+.history-list li { padding: 6px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }

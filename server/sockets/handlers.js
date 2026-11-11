@@ -19,7 +19,9 @@ import { attachRateLimit } from './rateLimit.js';
 import {
   createRoomSchema, joinRoomSchema, readySchema, emptySchema, askSchema,
   showClueSchema, searchSchema, pinSchema, unpinSchema, linkSchema,
+  accuseSchema, voteSchema, withdrawSchema,
 } from './schemas.js';
+import { proposeAccusation, castVote, withdrawAccusation, settleVote } from '../game/accusation.js';
 import { askSuspect } from '../interrogation/interrogate.js';
 import { searchLocation } from '../game/locations.js';
 import { pinStatement, unpinStatement, linkItems } from '../game/board.js';
@@ -72,7 +74,10 @@ export function registerSocketHandlers(io) {
 
     room.removePlayer(playerId);
     if (room.players.size === 0) deleteRoom(room.code);
-    else broadcastRoom(room);
+    else {
+      settleVote(room); // one voter fewer: an open vote may be decided now
+      broadcastRoom(room);
+    }
   }
 
   /**
@@ -294,6 +299,36 @@ export function registerSocketHandlers(io) {
       });
     });
 
+    // ---- accusation and vote ------------------------------------------------
+    // Everyone gets the result in the SAME broadcast, so the verdict appears
+    // on every screen at the same moment.
+    on('accusation:propose', accuseSchema, { needsRoom: true }, (data, { room, player }) => {
+      const reply = proposeAccusation(room, player, data);
+      if (reply.ok) broadcastRoom(room);
+      return reply.ok ? { ok: true } : reply;
+    });
+
+    on('accusation:vote', voteSchema, { needsRoom: true }, (data, { room, player }) => {
+      const reply = castVote(room, player, data);
+      if (reply.ok) broadcastRoom(room);
+      return reply.ok ? { ok: true } : reply;
+    });
+
+    on('accusation:withdraw', withdrawSchema, { needsRoom: true }, (data, { room, player }) => {
+      const reply = withdrawAccusation(room, player, data);
+      if (reply.ok) broadcastRoom(room);
+      return reply;
+    });
+
+    // After the verdict the host takes everyone back to the lobby for a new case.
+    on('game:backToLobby', emptySchema, { needsRoom: true }, (data, { room, player }) => {
+      if (player.id !== room.hostId) return { ok: false, error: 'Only the host can do that.' };
+      if (room.phase !== 'ended') return { ok: false, error: 'The case is not over yet.' };
+      room.resetToLobby();
+      broadcastRoom(room);
+      return { ok: true };
+    });
+
     // ---- disconnect (tab closed, wifi lost, page refreshed...) ---------------
     socket.on('disconnect', () => {
       const room = getRoom(socket.data.roomCode || '');
@@ -317,6 +352,8 @@ export function registerSocketHandlers(io) {
       // (Once a game is running the player is kept, so they can return.)
 
       if (room.connectedPlayers().length === 0) room.emptySince = Date.now();
+      // Fewer people connected = a smaller majority. The vote may be decided now.
+      settleVote(room);
       broadcastRoom(room);
     });
 

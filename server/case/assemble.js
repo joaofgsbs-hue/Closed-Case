@@ -175,6 +175,8 @@ export function assembleCase(skeleton, world, clueTexts) {
       culpritId,
       motive: world.motiveDetail,
       method: world.methodDetail,
+      motiveCategory: skeleton.motive,
+      methodCategory: skeleton.method,
       opportunity: `${culpritName} slipped out of ${P.hall} at ${times.culpritLeaves} claiming to go to ${P.fake}, followed ${victim} to ${P.scene}, and was back by ${times.culpritReturns}.`,
     },
     timeline,

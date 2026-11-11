@@ -12,6 +12,8 @@
     <p class="tagline">Every game, a new murder. Question the suspects. Name the killer.</p>
 
     <p id="banner" class="banner" hidden role="alert"></p>
+    <!-- Shown on every investigation screen while an accusation waits for THIS player's vote. -->
+    <button id="vote-alert" type="button" class="vote-alert" hidden></button>
 
     <!-- ============ SCREEN: home (create or join) ============ -->
     <section id="screen-home" class="screen">
@@ -68,6 +70,13 @@
 
       <p id="home-error" class="error" aria-live="polite"></p>
 
+      <!-- Kept only in THIS browser (localStorage). Nothing is sent to the server. -->
+      <details id="history-box" class="history" hidden>
+        <summary>Your past cases <span id="history-count"></span></summary>
+        <ul id="history-list" class="history-list"></ul>
+        <button id="history-clear" type="button" class="link">Clear history</button>
+      </details>
+
       <!-- Development only: the phase 1 model check. Hidden in production. -->
       <details id="debug-box" class="debug" hidden>
         <summary>Debug: server status</summary>
@@ -118,6 +127,7 @@
         <button id="hub-tab-case" type="button" class="tab active" role="tab">Case</button>
         <button id="hub-tab-map" type="button" class="tab" role="tab">Map <span id="hub-actions"></span></button>
         <button id="hub-tab-board" type="button" class="tab" role="tab">Board <span id="hub-board-count"></span></button>
+        <button id="hub-tab-accuse" type="button" class="tab" role="tab">Accuse <span id="hub-accuse-mark"></span></button>
       </div>
 
       <!-- ---- panel: case file ---- -->
@@ -158,7 +168,75 @@
         <ul id="board-links" class="board-list"></ul>
       </div>
 
+      <!-- ---- panel: accusation ---- -->
+      <div id="hub-panel-accuse" hidden>
+        <p id="accuse-note" class="notice" hidden></p>
+
+        <!-- the vote in progress (shown instead of the form while one is open) -->
+        <div id="accuse-vote" hidden>
+          <h3>Accusation by <span id="vote-by"></span></h3>
+          <ul id="vote-claim" class="facts"></ul>
+          <p id="vote-needed" class="hint"></p>
+          <ul id="vote-list" class="players"></ul>
+          <div class="vote-buttons">
+            <button id="vote-agree" type="button" class="primary">Agree</button>
+            <button id="vote-disagree" type="button" class="secondary">Disagree</button>
+          </div>
+          <button id="vote-withdraw" type="button" class="link" hidden>Withdraw my accusation</button>
+        </div>
+
+        <!-- the form -->
+        <form id="accuse-form" hidden>
+          <p class="hint">When more than half of the players in the room agree, the verdict is read to everyone. There is no second chance.</p>
+          <label class="field">
+            <span>Who killed the victim?</span>
+            <select id="accuse-culprit"></select>
+          </label>
+          <label class="field">
+            <span>Why? (motive)</span>
+            <select id="accuse-motive"></select>
+          </label>
+          <label class="field">
+            <span>How? (method)</span>
+            <select id="accuse-method"></select>
+          </label>
+          <fieldset class="field">
+            <legend>Your evidence: choose 2 or 3 clues</legend>
+            <ul id="accuse-clues" class="board-list"></ul>
+          </fieldset>
+          <button id="accuse-submit" type="submit" class="primary">Propose this accusation</button>
+        </form>
+        <p id="accuse-error" class="error" aria-live="polite"></p>
+      </div>
+
       <button id="game-leave" type="button" class="link">Leave room</button>
+    </section>
+
+    <!-- ============ SCREEN: result (the verdict, shown to everyone at once) ============ -->
+    <section id="screen-result" class="screen" hidden>
+      <p class="eyebrow">Case file <span id="result-casecode"></span></p>
+      <h2 id="result-title" class="case-title"></h2>
+      <p id="result-verdict" class="verdict"></p>
+      <p id="result-score" class="score"></p>
+      <ul id="result-breakdown" class="breakdown"></ul>
+
+      <h3>Your accusation</h3>
+      <p id="result-who" class="hint"></p>
+      <ul id="result-accused" class="facts"></ul>
+
+      <h3>What really happened</h3>
+      <ul id="result-truth" class="facts"></ul>
+      <h3>The key evidence</h3>
+      <ul id="result-keyclues" class="facts"></ul>
+      <details>
+        <summary>The full timeline</summary>
+        <ul id="result-timeline" class="timeline"></ul>
+      </details>
+
+      <button id="result-lobby" type="button" class="primary" hidden>New case with the same players</button>
+      <p id="result-wait" class="hint" hidden>Waiting for the host to start a new case…</p>
+      <p id="result-error" class="error" aria-live="polite"></p>
+      <button id="result-leave" type="button" class="link">Leave room</button>
     </section>
     <!-- ============ SCREEN: interrogation (chat with one suspect) ============ -->
     <section id="screen-interrogation" class="screen" hidden>

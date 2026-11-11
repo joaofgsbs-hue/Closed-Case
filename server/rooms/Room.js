@@ -5,6 +5,7 @@
 
 import crypto from 'node:crypto';
 import { config } from '../config.js';
+import { buildAccusationOptions } from '../game/accusation.js';
 
 export const MAX_PLAYERS = 8;
 
@@ -12,7 +13,7 @@ export class Room {
   constructor(code, settings) {
     this.code = code;                 // 4 letters, e.g. "KQRT"
     this.settings = settings;         // { theme, difficulty, mode }
-    this.phase = 'lobby';             // 'lobby' -> 'generating' -> 'investigation'
+    this.phase = 'lobby';             // 'lobby' -> 'generating' -> 'investigation' -> 'ended'
     this.generation = null;           // progress while the case is being written
     this.notice = null;               // a message for the lobby, e.g. "generation failed"
     this.caseCode = null;             // 6-character code to replay this case later
@@ -38,6 +39,12 @@ export class Room {
     this.board = { statements: [], links: [] };
     this.linkChecksUsed = 0;
     this.cornered = false;           // true once the culprit faces proof they cannot explain
+
+    // ---- accusation (see game/accusation.js) ----
+    this.accusationOptions = null;   // { motive: {options, correctIndex}, method: {...} } - correctIndex is SECRET
+    this.proposal = null;            // the accusation being voted on right now, if any
+    this.lastVoteNote = null;        // e.g. "The accusation by Ana was voted down."
+    this.result = null;              // the verdict, once phase is 'ended'
   }
 
   /** Called once the case is ready: opens the investigation. */
@@ -54,8 +61,36 @@ export class Room {
     this.board = { statements: [], links: [] };
     this.linkChecksUsed = 0;
     this.cornered = false;
+    this.accusationOptions = buildAccusationOptions(truth, this.settings.theme);
+    this.proposal = null;
+    this.lastVoteNote = null;
+    this.result = null;
     this.generation = null;
     this.phase = 'investigation';
+  }
+
+  /**
+   * After the verdict: back to the lobby for a new case, same players.
+   * Players who are not connected any more lose their seat now.
+   */
+  resetToLobby() {
+    for (const player of [...this.players.values()]) {
+      if (!player.connected) this.removePlayer(player.id);
+      else player.ready = false;
+    }
+    this.caseTruth = null;
+    this.caseCode = null;
+    this.settings.caseCode = undefined;
+    this.interrogations = new Map();
+    this.suspectQueues = new Map();
+    this.searched = new Map();
+    this.foundClues = new Map();
+    this.board = { statements: [], links: [] };
+    this.accusationOptions = null;
+    this.proposal = null;
+    this.result = null;
+    this.notice = null;
+    this.phase = 'lobby';
   }
 
   /** Names are compared without caring about upper/lower case or outer spaces. */

@@ -6,8 +6,9 @@
 import { $, el } from '../dom.js';
 import { request } from '../net.js';
 import { renderBriefing } from './briefing.js';
+import { renderAccuse } from './accuse.js';
 
-const TABS = ['case', 'map', 'board'];
+const TABS = ['case', 'map', 'board', 'accuse'];
 let tab = 'case';
 let current = null;
 const selected = new Set(); // board items ticked in THIS browser, e.g. "clue:c3"
@@ -30,6 +31,11 @@ export function initHub() {
   });
 }
 
+/** Opens one tab from outside (e.g. the "vote now" alert). */
+export function openHubTab(name) {
+  if (TABS.includes(name)) tab = name;
+}
+
 export function renderHub(room) {
   current = room;
   draw();
@@ -45,9 +51,14 @@ function draw() {
   $('hub-actions').textContent = `(${inv.actionsLeft})`;
   $('hub-board-count').textContent = `(${inv.clues.length + inv.board.statements.length})`;
 
+  // A "!" on the Accuse tab while an accusation waits for my vote.
+  const proposal = current.accusation && current.accusation.proposal;
+  $('hub-accuse-mark').textContent = proposal && !proposal.yourVote ? '(!)' : '';
+
   renderBriefing(current);
   drawMap(inv);
   drawBoard(inv);
+  renderAccuse(current);
 }
 
 // ---- map ---------------------------------------------------------------------------

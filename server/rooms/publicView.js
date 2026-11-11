@@ -132,6 +132,84 @@ function toPublicInvestigation(room) {
   };
 }
 
+/**
+ * The accusation form and the vote in progress. The options are generic
+ * lists; `correctIndex` is NOT copied.
+ */
+function toPublicAccusation(room, viewerId) {
+  if (!room.accusationOptions) return null;
+  const truth = room.caseTruth;
+  const p = room.proposal;
+  return {
+    motiveOptions: [...room.accusationOptions.motive.options],
+    methodOptions: [...room.accusationOptions.method.options],
+    lastVoteNote: room.lastVoteNote,
+    proposal: p
+      ? {
+          id: p.id,
+          byId: p.byId,
+          byName: p.byName,
+          culpritName: truth.suspects.find((s) => s.id === p.culpritId).name,
+          motive: room.accusationOptions.motive.options[p.motiveIndex],
+          method: room.accusationOptions.method.options[p.methodIndex],
+          clueNames: p.clueIds.map((id) => truth.clues.find((c) => c.id === id).name),
+          // Votes are open: everyone sees who agreed and who did not.
+          votes: [...room.players.values()].map((player) => ({
+            name: player.name,
+            connected: player.connected,
+            vote: p.votes.has(player.id) ? (p.votes.get(player.id) ? 'agree' : 'disagree') : null,
+          })),
+          yourVote: p.votes.has(viewerId) ? (p.votes.get(viewerId) ? 'agree' : 'disagree') : null,
+          needed: Math.floor(room.connectedPlayers().length / 2) + 1,
+        }
+      : null,
+  };
+}
+
+/**
+ * The verdict and THE TRUTH. This is the only place where the solution is
+ * copied for a browser, and it only happens once the case is over
+ * (phase 'ended'): before that, this returns null.
+ */
+function toPublicResult(room) {
+  if (room.phase !== 'ended' || !room.result) return null;
+  const truth = room.caseTruth;
+  const r = room.result;
+  const culprit = truth.suspects.find((s) => s.id === truth.solution.culpritId);
+  const options = room.accusationOptions;
+  return {
+    solved: r.solved,
+    score: r.score,
+    maxScore: r.maxScore,
+    breakdown: r.breakdown.map((row) => ({ label: row.label, points: row.points, max: row.max })),
+    accused: {
+      proposedBy: r.accused.proposedBy,
+      agreedBy: [...r.accused.agreedBy],
+      culpritName: r.accused.culpritName,
+      culpritRight: r.accused.culpritRight,
+      motive: r.accused.motive,
+      motiveRight: r.accused.motiveRight,
+      method: r.accused.method,
+      methodRight: r.accused.methodRight,
+      clues: r.accused.clues.map((c) => ({ name: c.name, good: c.good })),
+    },
+    questionsUsed: r.questionsUsed,
+    endedAt: r.endedAt,
+    truth: {
+      culpritName: culprit.name,
+      motive: options.motive.options[options.motive.correctIndex],
+      method: options.method.options[options.method.correctIndex],
+      motiveStory: truth.solution.motive,
+      methodStory: truth.solution.method,
+      opportunity: truth.solution.opportunity,
+      timeline: truth.timeline.map((t) => ({ time: t.time, event: t.event })),
+      keyClues: truth.clues
+        .filter((c) => c.pointsToSuspectId === culprit.id && !c.isRedHerring)
+        .map((c) => ({ name: c.name, found: room.foundClues.has(c.id) })),
+    },
+  };
+}
+
 export function toPublicRoom(room, viewerId) {
   return {
     code: room.code,
@@ -143,6 +221,8 @@ export function toPublicRoom(room, viewerId) {
     case: toPublicCase(room),
     interrogations: toPublicInterrogations(room),
     investigation: toPublicInvestigation(room),
+    accusation: toPublicAccusation(room, viewerId),
+    result: toPublicResult(room),
     settings: {
       theme: room.settings.theme,
       difficulty: room.settings.difficulty,

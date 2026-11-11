@@ -66,3 +66,14 @@ export const linkSchema = z.object({ a: itemRef, b: itemRef }).strict();
 
 // For messages that carry no data at all.
 export const emptySchema = z.object({}).strict();
+
+// ---- accusation (phase 6) ----
+const optionIndex = z.number().int().min(0).max(3);
+export const accuseSchema = z.object({
+  culpritId: suspectIdField,
+  motiveIndex: optionIndex,
+  methodIndex: optionIndex,
+  clueIds: z.array(clueIdField).min(2, 'Choose at least 2 clues as evidence.').max(3, 'Choose at most 3 clues.'),
+}).strict();
+export const voteSchema = z.object({ proposalId: numericId, agree: z.boolean() }).strict();
+export const withdrawSchema = z.object({ proposalId: numericId }).strict();
